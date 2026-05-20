@@ -48,6 +48,11 @@
           </label>
 
           <label>
+            카테고리
+            <select id="categoryInput"></select>
+          </label>
+
+          <label>
             항목명
             <input id="titleInput" type="text" placeholder="예: 용돈, 간식" />
           </label>
@@ -73,7 +78,68 @@
         <button class="filter-button" type="button" data-filter="expense">지출만 보기</button>
       </section>
 
-      <!-- 5. 기록 목록 표 -->
+      <!-- 추가 기능: 분석과 파일 내보내기에 사용할 기간 선택 -->
+      <section class="panel tools-panel">
+        <div>
+          <h2>분석과 내보내기</h2>
+          <p>선택한 기간의 카테고리 비율을 보고, 월별 기록을 파일로 저장할 수 있어요.</p>
+        </div>
+
+        <div class="period-controls">
+          <label>
+            분석 단위
+            <select id="periodTypeInput">
+              <option value="day">일자별</option>
+              <option value="month" selected>월별</option>
+              <option value="year">연도별</option>
+            </select>
+          </label>
+
+          <label>
+            기간
+            <input id="periodValueInput" type="month" />
+          </label>
+
+          <label>
+            내보낼 월
+            <input id="exportMonthInput" type="month" />
+          </label>
+        </div>
+
+        <div class="export-buttons">
+          <button id="excelButton" class="soft-button" type="button">월별 엑셀 다운로드</button>
+          <button id="googleSheetButton" class="soft-button" type="button">구글 시트로 보내기</button>
+        </div>
+      </section>
+
+      <!-- 5. 카테고리별 비율 시각화 -->
+      <section class="chart-grid" aria-label="카테고리별 비율 분석">
+        <article class="panel chart-panel">
+          <div class="chart-title">
+            <h2>수입 카테고리 비율</h2>
+            <span id="incomeChartTotal">0원</span>
+          </div>
+          <div class="donut-wrap">
+            <div id="incomeDonut" class="donut empty"></div>
+            <strong id="incomeDonutText">0%</strong>
+          </div>
+          <div id="incomeLegend" class="legend"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="chart-title">
+            <h2>지출 카테고리 비율</h2>
+            <span id="expenseChartTotal">0원</span>
+          </div>
+          <div class="donut-wrap">
+            <div id="expenseDonut" class="donut empty"></div>
+            <strong id="expenseDonutText">0%</strong>
+          </div>
+          <div id="expenseLegend" class="legend"></div>
+        </article>
+      </section>
+
+      <!-- 6. 기록 목록 표 -->
       <section class="panel">
         <div class="table-title">
           <h2>기록 목록</h2>
@@ -86,6 +152,7 @@
               <tr>
                 <th>날짜</th>
                 <th>구분</th>
+                <th>카테고리</th>
                 <th>항목명</th>
                 <th>금액</th>
                 <th>메모</th>
@@ -101,12 +168,12 @@
         <p id="emptyMessage" class="empty-message">아직 등록된 기록이 없어요.</p>
       </section>
 
-      <!-- 6. 전체 기록 초기화 버튼 -->
+      <!-- 7. 전체 기록 초기화 버튼 -->
       <section class="reset-area">
         <button id="resetButton" class="reset-button" type="button">전체 기록 초기화</button>
       </section>
 
-      <!-- 7. 하단 저작권 문구 -->
+      <!-- 8. 하단 저작권 문구 -->
       <footer>
         © 2026 크레오디교육연구소
       </footer>
