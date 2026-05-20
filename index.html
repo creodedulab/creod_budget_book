@@ -3,199 +3,114 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>나만의 용돈기입장</title>
+    <title>나의 용돈기입장</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">₩</span>
-          <div>
-            <h1>용돈기입장</h1>
-            <p>내 돈 흐름을 가볍게 기록해요</p>
-          </div>
+    <div class="app">
+      <!-- 1. 제목 영역 -->
+      <header class="hero">
+        <h1>나의 용돈기입장</h1>
+        <p>수입과 지출을 기록하며 돈 관리 습관을 길러요</p>
+      </header>
+
+      <!-- 2. 총 수입 / 총 지출 / 현재 잔액 요약 카드 -->
+      <section class="summary" aria-label="용돈 요약">
+        <article class="summary-card income-card">
+          <span>총 수입</span>
+          <strong id="totalIncome">0원</strong>
+        </article>
+        <article class="summary-card expense-card">
+          <span>총 지출</span>
+          <strong id="totalExpense">0원</strong>
+        </article>
+        <article class="summary-card balance-card">
+          <span>현재 잔액</span>
+          <strong id="currentBalance">0원</strong>
+        </article>
+      </section>
+
+      <!-- 3. 입력 폼 -->
+      <section class="panel">
+        <h2>새 기록 등록</h2>
+        <form id="recordForm" class="record-form">
+          <label>
+            날짜
+            <input id="dateInput" type="date" />
+          </label>
+
+          <label>
+            구분
+            <select id="typeInput">
+              <option value="income">수입</option>
+              <option value="expense">지출</option>
+            </select>
+          </label>
+
+          <label>
+            항목명
+            <input id="titleInput" type="text" placeholder="예: 용돈, 간식" />
+          </label>
+
+          <label>
+            금액
+            <input id="amountInput" type="number" min="1" placeholder="예: 5000" />
+          </label>
+
+          <label class="wide">
+            메모
+            <input id="memoInput" type="text" placeholder="선택 입력" />
+          </label>
+
+          <button class="primary-button" type="submit">등록하기</button>
+        </form>
+      </section>
+
+      <!-- 4. 필터 버튼 -->
+      <section class="filter-area" aria-label="기록 필터">
+        <button class="filter-button active" type="button" data-filter="all">전체 보기</button>
+        <button class="filter-button" type="button" data-filter="income">수입만 보기</button>
+        <button class="filter-button" type="button" data-filter="expense">지출만 보기</button>
+      </section>
+
+      <!-- 5. 기록 목록 표 -->
+      <section class="panel">
+        <div class="table-title">
+          <h2>기록 목록</h2>
+          <span id="recordCount">0개</span>
         </div>
 
-        <nav class="view-tabs" aria-label="화면 이동">
-          <button class="view-tab active" type="button" data-view="ledger">기록</button>
-          <button class="view-tab" type="button" data-view="analysis">분석</button>
-        </nav>
-
-        <section class="month-picker" aria-label="월 선택">
-          <button class="icon-button" id="prevMonth" type="button" aria-label="이전 달">‹</button>
-          <strong id="currentMonth"></strong>
-          <button class="icon-button" id="nextMonth" type="button" aria-label="다음 달">›</button>
-        </section>
-
-        <section class="summary-stack" aria-label="월별 요약">
-          <article class="summary-card balance">
-            <span>이번 달 남은 돈</span>
-            <strong id="balanceAmount">0원</strong>
-          </article>
-          <article class="summary-card income">
-            <span>받은 돈</span>
-            <strong id="incomeAmount">0원</strong>
-          </article>
-          <article class="summary-card expense">
-            <span>쓴 돈</span>
-            <strong id="expenseAmount">0원</strong>
-          </article>
-        </section>
-      </aside>
-
-      <main class="workspace">
-        <div id="ledgerView" class="view-panel">
-          <section class="entry-panel" aria-labelledby="entryTitle">
-            <div class="section-title">
-              <div>
-                <h2 id="entryTitle">새 기록</h2>
-                <p>용돈을 받거나 쓴 순간을 바로 남겨요.</p>
-              </div>
-              <button id="clearAll" class="ghost-button" type="button">저장 데이터 삭제</button>
-            </div>
-
-            <form id="entryForm" class="entry-form">
-              <input type="hidden" id="entryId" />
-              <div class="segmented" role="group" aria-label="거래 종류">
-                <label>
-                  <input type="radio" name="type" value="income" checked />
-                  <span>수입</span>
-                </label>
-                <label>
-                  <input type="radio" name="type" value="expense" />
-                  <span>지출</span>
-                </label>
-              </div>
-
-              <label class="field">
-                <span>날짜</span>
-                <input id="dateInput" type="date" required />
-              </label>
-
-              <label class="field">
-                <span>내용</span>
-                <input id="titleInput" type="text" placeholder="예: 편의점 간식" maxlength="32" required />
-              </label>
-
-              <label class="field">
-                <span>금액</span>
-                <input id="amountInput" type="text" inputmode="numeric" placeholder="0" required />
-              </label>
-
-              <label class="field">
-                <span>카테고리</span>
-                <select id="categoryInput" required></select>
-              </label>
-
-              <label class="field field-wide">
-                <span>메모</span>
-                <input id="noteInput" type="text" placeholder="선택 입력" maxlength="48" />
-              </label>
-
-              <div class="form-actions">
-                <button id="cancelEdit" class="secondary-button" type="button" hidden>취소</button>
-                <button class="primary-button" type="submit">기록하기</button>
-              </div>
-            </form>
-          </section>
-
-          <section class="insights" aria-label="카테고리 요약">
-            <div class="section-title compact">
-              <h2>카테고리별 지출</h2>
-              <span id="topCategory">아직 기록이 없어요</span>
-            </div>
-            <div id="categoryBars" class="category-bars"></div>
-          </section>
-
-          <section class="ledger" aria-labelledby="ledgerTitle">
-            <div class="section-title">
-              <div>
-                <h2 id="ledgerTitle">기록장</h2>
-                <p id="entryCount">0개의 기록</p>
-              </div>
-              <div class="filters">
-                <input id="searchInput" type="search" placeholder="검색" aria-label="기록 검색" />
-                <select id="filterType" aria-label="종류 필터">
-                  <option value="all">전체</option>
-                  <option value="income">수입</option>
-                  <option value="expense">지출</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="entries" class="entries" aria-live="polite"></div>
-          </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>구분</th>
+                <th>항목명</th>
+                <th>금액</th>
+                <th>메모</th>
+                <th>삭제</th>
+              </tr>
+            </thead>
+            <tbody id="recordList">
+              <!-- JavaScript가 여기에 기록을 추가합니다. -->
+            </tbody>
+          </table>
         </div>
 
-        <div id="analysisView" class="view-panel hidden">
-          <section class="analysis-panel" aria-labelledby="analysisTitle">
-            <div class="section-title">
-              <div>
-                <h2 id="analysisTitle">비율 분석</h2>
-                <p>일자별, 월별, 연도별로 수입과 지출의 카테고리 비율을 확인해요.</p>
-              </div>
-              <div class="analysis-controls">
-                <select id="analysisPeriodType" aria-label="분석 기간 단위">
-                  <option value="day">일자별</option>
-                  <option value="month" selected>월별</option>
-                  <option value="year">연도별</option>
-                </select>
-                <input id="analysisPeriodValue" type="month" aria-label="분석 기간" />
-              </div>
-            </div>
+        <p id="emptyMessage" class="empty-message">아직 등록된 기록이 없어요.</p>
+      </section>
 
-            <div class="analysis-summary">
-              <article>
-                <span>선택 기간</span>
-                <strong id="analysisPeriodLabel">-</strong>
-              </article>
-              <article>
-                <span>수입 합계</span>
-                <strong id="analysisIncomeTotal">0원</strong>
-              </article>
-              <article>
-                <span>지출 합계</span>
-                <strong id="analysisExpenseTotal">0원</strong>
-              </article>
-            </div>
-          </section>
+      <!-- 6. 전체 기록 초기화 버튼 -->
+      <section class="reset-area">
+        <button id="resetButton" class="reset-button" type="button">전체 기록 초기화</button>
+      </section>
 
-          <section class="chart-grid" aria-label="카테고리 비율 그래프">
-            <article class="chart-panel">
-              <div class="chart-heading">
-                <h2>수입 카테고리 비율</h2>
-                <span id="incomeChartCount">0개의 기록</span>
-              </div>
-              <div class="donut-wrap">
-                <div id="incomeDonut" class="donut empty" role="img" aria-label="수입 카테고리 비율"></div>
-                <strong id="incomeDonutCenter">0원</strong>
-              </div>
-              <div id="incomeLegend" class="legend-list"></div>
-            </article>
-
-            <article class="chart-panel">
-              <div class="chart-heading">
-                <h2>지출 카테고리 비율</h2>
-                <span id="expenseChartCount">0개의 기록</span>
-              </div>
-              <div class="donut-wrap">
-                <div id="expenseDonut" class="donut empty" role="img" aria-label="지출 카테고리 비율"></div>
-                <strong id="expenseDonutCenter">0원</strong>
-              </div>
-              <div id="expenseLegend" class="legend-list"></div>
-            </article>
-          </section>
-        </div>
-      </main>
+      <!-- 7. 하단 저작권 문구 -->
+      <footer>
+        © 2026 크레오디교육연구소
+      </footer>
     </div>
-
-    <template id="emptyTemplate">
-      <div class="empty-state">
-        <strong>기록이 아직 없어요.</strong>
-        <p>첫 용돈 기록을 남기면 요약이 바로 채워집니다.</p>
-      </div>
-    </template>
 
     <script src="app.js"></script>
   </body>
