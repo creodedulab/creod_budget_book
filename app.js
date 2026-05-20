@@ -5,17 +5,7 @@ const categories = {
   expense: ["간식", "교통", "문구", "친구", "취미", "저축", "기타"],
 };
 
-const initialEntries = [
-  {
-    id: crypto.randomUUID(),
-    type: "income",
-    date: localDateString(new Date()),
-    title: "이번 달 용돈",
-    amount: 50000,
-    category: "용돈",
-    note: "시작 금액",
-  },
-];
+const chartColors = ["#3267a8", "#1f8a5b", "#f0b642", "#c44d42", "#7458a8", "#2f8f8b", "#d66f32"];
 
 let entries = loadEntries();
 let viewedMonth = new Date();
@@ -39,16 +29,32 @@ const categoryBars = document.querySelector("#categoryBars");
 const topCategory = document.querySelector("#topCategory");
 const emptyTemplate = document.querySelector("#emptyTemplate");
 const cancelEdit = document.querySelector("#cancelEdit");
+const viewTabs = document.querySelectorAll(".view-tab");
+const ledgerView = document.querySelector("#ledgerView");
+const analysisView = document.querySelector("#analysisView");
+const analysisPeriodType = document.querySelector("#analysisPeriodType");
+const analysisPeriodValue = document.querySelector("#analysisPeriodValue");
+const analysisPeriodLabel = document.querySelector("#analysisPeriodLabel");
+const analysisIncomeTotal = document.querySelector("#analysisIncomeTotal");
+const analysisExpenseTotal = document.querySelector("#analysisExpenseTotal");
+const incomeDonut = document.querySelector("#incomeDonut");
+const expenseDonut = document.querySelector("#expenseDonut");
+const incomeDonutCenter = document.querySelector("#incomeDonutCenter");
+const expenseDonutCenter = document.querySelector("#expenseDonutCenter");
+const incomeLegend = document.querySelector("#incomeLegend");
+const expenseLegend = document.querySelector("#expenseLegend");
+const incomeChartCount = document.querySelector("#incomeChartCount");
+const expenseChartCount = document.querySelector("#expenseChartCount");
 
 function loadEntries() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return initialEntries;
+  if (!saved) return [];
 
   try {
     const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed : initialEntries;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return initialEntries;
+    return [];
   }
 }
 
@@ -62,6 +68,10 @@ function money(value) {
     currency: "KRW",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function parseAmount(value) {
+  return Number(String(value).replace(/[^\d]/g, ""));
 }
 
 function localDateString(date) {
@@ -106,12 +116,8 @@ function filteredEntries() {
 
 function renderSummary() {
   const monthEntries = monthlyEntries();
-  const income = monthEntries
-    .filter((entry) => entry.type === "income")
-    .reduce((sum, entry) => sum + entry.amount, 0);
-  const expense = monthEntries
-    .filter((entry) => entry.type === "expense")
-    .reduce((sum, entry) => sum + entry.amount, 0);
+  const income = sumByType(monthEntries, "income");
+  const expense = sumByType(monthEntries, "expense");
 
   currentMonth.textContent = viewedMonth.toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -124,32 +130,28 @@ function renderSummary() {
 
 function renderCategoryBars() {
   const expenses = monthlyEntries().filter((entry) => entry.type === "expense");
-  const totals = expenses.reduce((acc, entry) => {
-    acc[entry.category] = (acc[entry.category] || 0) + entry.amount;
-    return acc;
-  }, {});
-  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const max = rows[0]?.[1] || 0;
+  const rows = categoryRows(expenses);
+  const max = rows[0]?.total || 0;
 
   categoryBars.innerHTML = "";
-  topCategory.textContent = rows.length ? `${rows[0][0]}에 가장 많이 썼어요` : "아직 기록이 없어요";
+  topCategory.textContent = rows.length ? `${rows[0].category}에 가장 많이 썼어요` : "아직 기록이 없어요";
 
   if (!rows.length) {
     categoryBars.append(emptyTemplate.content.cloneNode(true));
     return;
   }
 
-  rows.forEach(([category, total]) => {
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    row.innerHTML = `
-      <span class="bar-label">${category}</span>
+  rows.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "bar-row";
+    item.innerHTML = `
+      <span class="bar-label">${escapeHtml(row.category)}</span>
       <div class="bar-track" aria-hidden="true">
-        <div class="bar-fill" style="width: ${(total / max) * 100}%"></div>
+        <div class="bar-fill" style="width: ${(row.total / max) * 100}%"></div>
       </div>
-      <span class="bar-amount">${money(total)}</span>
+      <span class="bar-amount">${money(row.total)}</span>
     `;
-    categoryBars.append(row);
+    categoryBars.append(item);
   });
 }
 
@@ -184,6 +186,127 @@ function renderEntries() {
   });
 }
 
+function renderAnalysis() {
+  const selectedEntries = entries.filter((entry) => isEntryInAnalysisPeriod(entry));
+  const incomeEntries = selectedEntries.filter((entry) => entry.type === "income");
+  const expenseEntries = selectedEntries.filter((entry) => entry.type === "expense");
+  const incomeTotal = sumByType(selectedEntries, "income");
+  const expenseTotal = sumByType(selectedEntries, "expense");
+
+  analysisPeriodLabel.textContent = formatAnalysisPeriodLabel();
+  analysisIncomeTotal.textContent = money(incomeTotal);
+  analysisExpenseTotal.textContent = money(expenseTotal);
+  incomeChartCount.textContent = `${incomeEntries.length}개의 기록`;
+  expenseChartCount.textContent = `${expenseEntries.length}개의 기록`;
+  renderDonutChart(incomeDonut, incomeDonutCenter, incomeLegend, categoryRows(incomeEntries), incomeTotal);
+  renderDonutChart(expenseDonut, expenseDonutCenter, expenseLegend, categoryRows(expenseEntries), expenseTotal);
+}
+
+function renderDonutChart(donut, center, legend, rows, total) {
+  center.textContent = money(total);
+  legend.innerHTML = "";
+
+  if (!rows.length || total <= 0) {
+    donut.className = "donut empty";
+    donut.style.background = "";
+    legend.append(emptyTemplate.content.cloneNode(true));
+    return;
+  }
+
+  let start = 0;
+  const slices = rows.map((row, index) => {
+    const end = start + (row.total / total) * 100;
+    const color = chartColors[index % chartColors.length];
+    const slice = `${color} ${start}% ${end}%`;
+    start = end;
+    return slice;
+  });
+
+  donut.className = "donut";
+  donut.style.background = `conic-gradient(${slices.join(", ")})`;
+
+  rows.forEach((row, index) => {
+    const percent = Math.round((row.total / total) * 1000) / 10;
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `
+      <span class="legend-color" style="background:${chartColors[index % chartColors.length]}"></span>
+      <strong>${escapeHtml(row.category)}</strong>
+      <span>${percent}%</span>
+      <span>${money(row.total)}</span>
+    `;
+    legend.append(item);
+  });
+}
+
+function sumByType(source, type) {
+  return source.filter((entry) => entry.type === type).reduce((sum, entry) => sum + entry.amount, 0);
+}
+
+function categoryRows(source) {
+  const totals = source.reduce((acc, entry) => {
+    acc[entry.category] = (acc[entry.category] || 0) + entry.amount;
+    return acc;
+  }, {});
+
+  return Object.entries(totals)
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+function isEntryInAnalysisPeriod(entry) {
+  const period = analysisPeriodType.value;
+  const value = analysisPeriodValue.value;
+  if (!value) return false;
+
+  if (period === "day") return entry.date === value;
+  if (period === "month") return entry.date.startsWith(value);
+  return entry.date.startsWith(value);
+}
+
+function updateAnalysisInput() {
+  const period = analysisPeriodType.value;
+  const now = new Date();
+
+  if (period === "day") {
+    analysisPeriodValue.type = "date";
+    analysisPeriodValue.value = localDateString(now);
+  } else if (period === "month") {
+    analysisPeriodValue.type = "month";
+    analysisPeriodValue.value = monthKey(now);
+  } else {
+    analysisPeriodValue.type = "number";
+    analysisPeriodValue.min = "2000";
+    analysisPeriodValue.max = "2100";
+    analysisPeriodValue.step = "1";
+    analysisPeriodValue.value = String(now.getFullYear());
+  }
+}
+
+function formatAnalysisPeriodLabel() {
+  const period = analysisPeriodType.value;
+  const value = analysisPeriodValue.value;
+  if (!value) return "-";
+
+  if (period === "day") {
+    return new Date(`${value}T00:00:00`).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    });
+  }
+
+  if (period === "month") {
+    return new Date(`${value}-01T00:00:00`).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+    });
+  }
+
+  return `${value}년`;
+}
+
 function formatShortDate(value) {
   return new Date(`${value}T00:00:00`).toLocaleDateString("ko-KR", {
     month: "short",
@@ -203,6 +326,7 @@ function render() {
   renderSummary();
   renderCategoryBars();
   renderEntries();
+  renderAnalysis();
 }
 
 function resetForm() {
@@ -214,6 +338,14 @@ function resetForm() {
   form.querySelector(".primary-button").textContent = "기록하기";
 }
 
+function switchView(view) {
+  const isAnalysis = view === "analysis";
+  ledgerView.classList.toggle("hidden", isAnalysis);
+  analysisView.classList.toggle("hidden", !isAnalysis);
+  viewTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
+  if (isAnalysis) renderAnalysis();
+}
+
 form.addEventListener("change", (event) => {
   if (event.target.name === "type") updateCategoryOptions();
 });
@@ -222,12 +354,18 @@ form.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const data = new FormData(form);
+  const amount = parseAmount(amountInput.value);
+  if (!amount) {
+    amountInput.focus();
+    return;
+  }
+
   const record = {
     id: entryId.value || crypto.randomUUID(),
     type: data.get("type"),
     date: dateInput.value,
     title: titleInput.value.trim(),
-    amount: Number(amountInput.value),
+    amount,
     category: categoryInput.value,
     note: noteInput.value.trim(),
   };
@@ -270,6 +408,7 @@ entriesEl.addEventListener("click", (event) => {
     noteInput.value = record.note;
     cancelEdit.hidden = false;
     form.querySelector(".primary-button").textContent = "수정하기";
+    switchView("ledger");
     titleInput.focus();
   }
 });
@@ -285,20 +424,29 @@ document.querySelector("#nextMonth").addEventListener("click", () => {
 });
 
 document.querySelector("#clearAll").addEventListener("click", () => {
-  if (!entries.length) return;
-  const confirmed = confirm("모든 기록을 삭제할까요?");
+  const confirmed = confirm("이 컴퓨터의 브라우저에 저장된 모든 용돈기입장 데이터를 삭제할까요?");
   if (!confirmed) return;
 
   entries = [];
-  saveEntries();
+  localStorage.removeItem(STORAGE_KEY);
   resetForm();
   render();
 });
 
+viewTabs.forEach((tab) => {
+  tab.addEventListener("click", () => switchView(tab.dataset.view));
+});
+
+analysisPeriodType.addEventListener("change", () => {
+  updateAnalysisInput();
+  renderAnalysis();
+});
+analysisPeriodValue.addEventListener("input", renderAnalysis);
 cancelEdit.addEventListener("click", resetForm);
 searchInput.addEventListener("input", renderEntries);
 filterType.addEventListener("change", renderEntries);
 
 setDefaultDate();
 updateCategoryOptions();
+updateAnalysisInput();
 render();

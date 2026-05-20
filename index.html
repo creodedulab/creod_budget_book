@@ -17,6 +17,11 @@
           </div>
         </div>
 
+        <nav class="view-tabs" aria-label="화면 이동">
+          <button class="view-tab active" type="button" data-view="ledger">기록</button>
+          <button class="view-tab" type="button" data-view="analysis">분석</button>
+        </nav>
+
         <section class="month-picker" aria-label="월 선택">
           <button class="icon-button" id="prevMonth" type="button" aria-label="이전 달">‹</button>
           <strong id="currentMonth"></strong>
@@ -40,92 +45,154 @@
       </aside>
 
       <main class="workspace">
-        <section class="entry-panel" aria-labelledby="entryTitle">
-          <div class="section-title">
-            <div>
-              <h2 id="entryTitle">새 기록</h2>
-              <p>용돈을 받거나 쓴 순간을 바로 남겨요.</p>
+        <div id="ledgerView" class="view-panel">
+          <section class="entry-panel" aria-labelledby="entryTitle">
+            <div class="section-title">
+              <div>
+                <h2 id="entryTitle">새 기록</h2>
+                <p>용돈을 받거나 쓴 순간을 바로 남겨요.</p>
+              </div>
+              <button id="clearAll" class="ghost-button" type="button">저장 데이터 삭제</button>
             </div>
-            <button id="clearAll" class="ghost-button" type="button">전체 삭제</button>
-          </div>
 
-          <form id="entryForm" class="entry-form">
-            <input type="hidden" id="entryId" />
-            <div class="segmented" role="group" aria-label="거래 종류">
-              <label>
-                <input type="radio" name="type" value="income" checked />
-                <span>수입</span>
+            <form id="entryForm" class="entry-form">
+              <input type="hidden" id="entryId" />
+              <div class="segmented" role="group" aria-label="거래 종류">
+                <label>
+                  <input type="radio" name="type" value="income" checked />
+                  <span>수입</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="expense" />
+                  <span>지출</span>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>날짜</span>
+                <input id="dateInput" type="date" required />
               </label>
-              <label>
-                <input type="radio" name="type" value="expense" />
-                <span>지출</span>
+
+              <label class="field">
+                <span>내용</span>
+                <input id="titleInput" type="text" placeholder="예: 편의점 간식" maxlength="32" required />
               </label>
+
+              <label class="field">
+                <span>금액</span>
+                <input id="amountInput" type="text" inputmode="numeric" placeholder="0" required />
+              </label>
+
+              <label class="field">
+                <span>카테고리</span>
+                <select id="categoryInput" required></select>
+              </label>
+
+              <label class="field field-wide">
+                <span>메모</span>
+                <input id="noteInput" type="text" placeholder="선택 입력" maxlength="48" />
+              </label>
+
+              <div class="form-actions">
+                <button id="cancelEdit" class="secondary-button" type="button" hidden>취소</button>
+                <button class="primary-button" type="submit">기록하기</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="insights" aria-label="카테고리 요약">
+            <div class="section-title compact">
+              <h2>카테고리별 지출</h2>
+              <span id="topCategory">아직 기록이 없어요</span>
+            </div>
+            <div id="categoryBars" class="category-bars"></div>
+          </section>
+
+          <section class="ledger" aria-labelledby="ledgerTitle">
+            <div class="section-title">
+              <div>
+                <h2 id="ledgerTitle">기록장</h2>
+                <p id="entryCount">0개의 기록</p>
+              </div>
+              <div class="filters">
+                <input id="searchInput" type="search" placeholder="검색" aria-label="기록 검색" />
+                <select id="filterType" aria-label="종류 필터">
+                  <option value="all">전체</option>
+                  <option value="income">수입</option>
+                  <option value="expense">지출</option>
+                </select>
+              </div>
             </div>
 
-            <label class="field">
-              <span>날짜</span>
-              <input id="dateInput" type="date" required />
-            </label>
+            <div id="entries" class="entries" aria-live="polite"></div>
+          </section>
+        </div>
 
-            <label class="field">
-              <span>내용</span>
-              <input id="titleInput" type="text" placeholder="예: 편의점 간식" maxlength="32" required />
-            </label>
-
-            <label class="field">
-              <span>금액</span>
-              <input id="amountInput" type="number" min="1" step="100" placeholder="0" required />
-            </label>
-
-            <label class="field">
-              <span>카테고리</span>
-              <select id="categoryInput" required></select>
-            </label>
-
-            <label class="field field-wide">
-              <span>메모</span>
-              <input id="noteInput" type="text" placeholder="선택 입력" maxlength="48" />
-            </label>
-
-            <div class="form-actions">
-              <button id="cancelEdit" class="secondary-button" type="button" hidden>취소</button>
-              <button class="primary-button" type="submit">기록하기</button>
+        <div id="analysisView" class="view-panel hidden">
+          <section class="analysis-panel" aria-labelledby="analysisTitle">
+            <div class="section-title">
+              <div>
+                <h2 id="analysisTitle">비율 분석</h2>
+                <p>일자별, 월별, 연도별로 수입과 지출의 카테고리 비율을 확인해요.</p>
+              </div>
+              <div class="analysis-controls">
+                <select id="analysisPeriodType" aria-label="분석 기간 단위">
+                  <option value="day">일자별</option>
+                  <option value="month" selected>월별</option>
+                  <option value="year">연도별</option>
+                </select>
+                <input id="analysisPeriodValue" type="month" aria-label="분석 기간" />
+              </div>
             </div>
-          </form>
-        </section>
 
-        <section class="insights" aria-label="카테고리 요약">
-          <div class="section-title compact">
-            <h2>카테고리별 지출</h2>
-            <span id="topCategory">아직 기록이 없어요</span>
-          </div>
-          <div id="categoryBars" class="category-bars"></div>
-        </section>
-
-        <section class="ledger" aria-labelledby="ledgerTitle">
-          <div class="section-title">
-            <div>
-              <h2 id="ledgerTitle">기록장</h2>
-              <p id="entryCount">0개의 기록</p>
+            <div class="analysis-summary">
+              <article>
+                <span>선택 기간</span>
+                <strong id="analysisPeriodLabel">-</strong>
+              </article>
+              <article>
+                <span>수입 합계</span>
+                <strong id="analysisIncomeTotal">0원</strong>
+              </article>
+              <article>
+                <span>지출 합계</span>
+                <strong id="analysisExpenseTotal">0원</strong>
+              </article>
             </div>
-            <div class="filters">
-              <input id="searchInput" type="search" placeholder="검색" aria-label="기록 검색" />
-              <select id="filterType" aria-label="종류 필터">
-                <option value="all">전체</option>
-                <option value="income">수입</option>
-                <option value="expense">지출</option>
-              </select>
-            </div>
-          </div>
+          </section>
 
-          <div id="entries" class="entries" aria-live="polite"></div>
-        </section>
+          <section class="chart-grid" aria-label="카테고리 비율 그래프">
+            <article class="chart-panel">
+              <div class="chart-heading">
+                <h2>수입 카테고리 비율</h2>
+                <span id="incomeChartCount">0개의 기록</span>
+              </div>
+              <div class="donut-wrap">
+                <div id="incomeDonut" class="donut empty" role="img" aria-label="수입 카테고리 비율"></div>
+                <strong id="incomeDonutCenter">0원</strong>
+              </div>
+              <div id="incomeLegend" class="legend-list"></div>
+            </article>
+
+            <article class="chart-panel">
+              <div class="chart-heading">
+                <h2>지출 카테고리 비율</h2>
+                <span id="expenseChartCount">0개의 기록</span>
+              </div>
+              <div class="donut-wrap">
+                <div id="expenseDonut" class="donut empty" role="img" aria-label="지출 카테고리 비율"></div>
+                <strong id="expenseDonutCenter">0원</strong>
+              </div>
+              <div id="expenseLegend" class="legend-list"></div>
+            </article>
+          </section>
+        </div>
       </main>
     </div>
 
     <template id="emptyTemplate">
       <div class="empty-state">
-        <strong>이번 달 기록이 아직 없어요.</strong>
+        <strong>기록이 아직 없어요.</strong>
         <p>첫 용돈 기록을 남기면 요약이 바로 채워집니다.</p>
       </div>
     </template>
